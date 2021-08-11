@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <!-- Include Dexie -->
+    <script src="https://unpkg.com/dexie@latest/dist/dexie.js"></script>
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32x32.png">
+
+
+    <script>
+        let endpoint = "https://data.cityofchicago.org/resource/dw27-rash.json";
+
+
+        var db = new Dexie("database");
+        db.version(2).stores({
+            schools: 'long_name, student_attainment_rating, student_attendance_year_1, school_type'
+        });
+        db.open().then(() => { console.log("Database opened successfully") }).catch(function (err) {
+            console.error(err.stack || err);
+        });
+
+        // get the unique department names and populate the select control
+        fetch(endpoint)
+            .then((response) => { return response.json() })
+            .then((result) => {
+
+                for (let item of result) {
+
+                    //
+                    // Put some data into it
+                    //
+                    db.schools.put(item).catch(function (error) {
+                        //
+                        // Finally don't forget to catch any error
+                        // that could have happened anywhere in the
+                        // code blocks above.
+                        //
+                        console.log("Oops: " + error);
+                    });
+                }
+            })
+
+        // db.schools.count().then((num) => {
+        //     let count = num;
+        //     console.log(count);
+        // }).then(() => {
+        //     // db.schools.clear();
+        // }).catch(() => { "COUNTING ERROR" });
+
+
+    // db.schools.clear();
+    </script>
+</head>
+
+<body>
+
+    <div id="main">
+        <h4>After the data is loaded, answer the following questions by running commands on the Dexie data store and
+            output the
+            results to the screen (in a separate div element for each answer)
+        </h4>
+        <div id="a">
+            <p>a) get the count of all schools</p>
+        </div>
+        <div id="b">
+            <p>b) get the count of schools with a student attainment rating of AVERAGE
+            </p>
+        </div>
+        <div id="c">
+            <p>c) list all school names with a student attendance year 1 greater than or equal to 98.0%
+            </p>
+        </div>
+        <div id="d">
+            <p>d) list all school names that start with the letter K
+            </p>
+        </div>
+        <div id="e">
+            <p>e) remove all schools with a school type of Charter and get the count of the remaining schools
+            </p>
+        </div>
+    </div>
+
+</body>
+
+<script>
+
+    const main = document.querySelector("#main");
+    const a = document.querySelector("#a");
+    const b = document.querySelector("#b");
+    const c = document.querySelector("#c");
+    const d = document.querySelector("#d");
+    const e = document.querySelector("#e");
+
+
+    const newDiv = document.createElement('div');
+    const p = document.createElement('p');
+
+
+    const asynchCount = async () => {
+        const result = await db.schools.count()
+        return result
+    }; (async () => {
+        const count = await asynchCount()
+        // console.log(typeof count, count)
+        let newText = document.createTextNode(count);
+        a.appendChild(newText);
+    })();
+
+    const resultForB = async () => {
+        const result = await db.schools.where({ student_attainment_rating: "AVERAGE" }).count();
+        return result;
+    }; (async () => {
+        const count = await resultForB();
+
+        let newText = document.createTextNode(count);
+        b.appendChild(newText);
+    })();
+
+    const resultForC = async () => {
+        const result = await db.schools.where("student_attendance_year_1").aboveOrEqual("98.0");
+        return result.toArray();
+    }; (async () => {
+        const count = await resultForC();
+        let div = document.createElement("div");
+        count.forEach(el => {
+            // console.log(typeof el.student_attendance_year_1, el.student_attendance_year_1);
+            let newText = document.createTextNode(el.student_attendance_year_1 + "% " + el.long_name);
+            div.append(newText);
+            div.append(document.createElement("br"));
+        });
+        c.appendChild(div);
+    })();
+
+    const resultForD = async () => {
+        const result = await db.schools.where("long_name").startsWithIgnoreCase('K');
+        return result.toArray();
+    }; (async () => {
+        const list = await resultForD();
+        let div = document.createElement("div");
+        list.forEach(el => {
+            // console.log(typeof el.student_attendance_year_1, el.student_attendance_year_1);
+            let newText = document.createTextNode(el.long_name);
+            div.append(newText);
+            div.append(document.createElement("br"));
+        });
+        d.appendChild(div);
+    })();
+
+    const resultForE = async () => {
+        const result = await db.schools.where("school_type").notEqual("Charter").count();
+        return result;
+    }; (async () => {
+        const count = await resultForE();
+        // console.log(typeof count, count)
+        let newText = document.createTextNode(count);
+        e.appendChild(newText);
+    })();
+
+
+</script>
+
+</html>
