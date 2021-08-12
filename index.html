@@ -15,40 +15,42 @@
         db.version(2).stores({
             schools: 'long_name, student_attainment_rating, student_attendance_year_1, school_type'
         });
-        db.open().then(() => {
-            // get the unique department names and populate the select control
-            console.log("Database opened successfully")
-            fetch(endpoint)
-                .then((response) => { return response.json() })
-                .then((result) => {
+        db.on("ready", () => {
+            db.open().then(() => {
+                // get the unique department names and populate the select control
+                console.log("Database opened successfully")
+                fetch(endpoint)
+                    .then((response) => { return response.json() })
+                    .then((result) => {
 
-                    for (let item of result) {
+                        for (let item of result) {
 
-                        //
-                        // Put some data into it
-                        //
-                        db.schools.put(item).catch(function (error) {
                             //
-                            // Finally don't forget to catch any error
-                            // that could have happened anywhere in the
-                            // code blocks above.
+                            // Put some data into it
                             //
-                            console.log("Oops: " + error);
-                        });
-                    }
-                })
-        }).catch(function (err) {
-            console.error(err.stack || err);
+                            db.schools.put(item).catch(function (error) {
+                                //
+                                // Finally don't forget to catch any error
+                                // that could have happened anywhere in the
+                                // code blocks above.
+                                //
+                                console.log("Oops: " + error);
+                            });
+                        }
+                    })
+            }).catch(function (err) {
+                console.error(err.stack || err);
 
+            })
         });
 
 
-        // db.schools.count().then((num) => {
-        //     let count = num;
-        //     console.log(count);
-        // }).then(() => {
-        //     // db.schools.clear();
-        // }).catch(() => { "COUNTING ERROR" });
+        db.schools.count().then((num) => {
+            let count = num;
+            console.log(count);
+        }).then(() => {
+            // db.schools.clear();
+        }).catch(() => { "COUNTING ERROR" });
 
 
     // db.schools.clear();
@@ -85,9 +87,8 @@
 
     <script>
 
-        db.open().then( function () {
+        db.open().then(function () {
             console.log("Database ready");
-
 
             const main = document.querySelector("#main");
             const a = document.querySelector("#a");
@@ -96,10 +97,8 @@
             const d = document.querySelector("#d");
             const e = document.querySelector("#e");
 
-
             const newDiv = document.createElement('div');
             const p = document.createElement('p');
-
 
             const asynchCount = async () => {
                 const result = await db.schools.count()
@@ -165,6 +164,5 @@
     </script>
 
 </body>
-
 
 </html>
