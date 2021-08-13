@@ -10,51 +10,102 @@
     <script>
         let endpoint = "https://data.cityofchicago.org/resource/dw27-rash.json";
 
-
         var db = new Dexie("database");
-        db.version(2).stores({
+        db.version(1).stores({
             schools: 'long_name, student_attainment_rating, student_attendance_year_1, school_type'
         });
-        db.on("ready", () => {
-            db.open().then(() => {
-                // get the unique department names and populate the select control
-                console.log("Database opened successfully")
-                fetch(endpoint)
-                    .then((response) => { return response.json() })
-                    .then((result) => {
 
-                        for (let item of result) {
+        // get the unique department names and populate the select control
+        fetch(endpoint)
+            .then((response) => { return response.json() })
+            .then((result) => {
+                for (let item of result) {
+                    // Put some data into it
+                    db.schools.put(item).catch(function (error) {
+                        // Finally don't forget to catch any error
+                        // that could have happened anywhere in the
+                        // code blocks above.
+                        console.log("PUT ERROR: " + error);
+                    });
+                }
+                console.log("PUTS COMPLETED");
+            }).then(() => {
 
-                            //
-                            // Put some data into it
-                            //
-                            db.schools.put(item).catch(function (error) {
-                                //
-                                // Finally don't forget to catch any error
-                                // that could have happened anywhere in the
-                                // code blocks above.
-                                //
-                                console.log("Oops: " + error);
-                            });
-                        }
-                    })
-            }).catch(function (err) {
-                console.error(err.stack || err);
+                const resultForA = async () => {
+                    console.log("resolving A");
+                    const result = await db.schools.count();
+                    return result
+                }; (async () => {
+                    const count = await resultForA();
+                    // console.log(typeof count, count)
+                    let newText = document.createTextNode(count);
+                    a.appendChild(newText);
+                })();
+
+                const resultForB = async () => {
+                    console.log("resolving B");
+
+                    const result = await db.schools.where({ student_attainment_rating: "AVERAGE" }).count();
+                    return result;
+                }; (async () => {
+                    const count = await resultForB();
+
+                    let newText = document.createTextNode(count);
+                    b.appendChild(newText);
+                })();
+
+                const resultForC = async () => {
+                    console.log("resolving C");
+
+                    const result = await db.schools.where("student_attendance_year_1").aboveOrEqual("98.0");
+                    return result.toArray();
+                }; (async () => {
+                    const count = await resultForC();
+                    let div = document.createElement("div");
+                    count.forEach(el => {
+                        // console.log(typeof el.student_attendance_year_1, el.student_attendance_year_1);
+                        let newText = document.createTextNode(el.student_attendance_year_1 + "% " + el.long_name);
+                        div.append(newText);
+                        div.append(document.createElement("br"));
+                    });
+                    c.appendChild(div);
+                })();
+
+                const resultForD = async () => {
+                    console.log("resolving D");
+
+                    const result = await db.schools.where("long_name").startsWithIgnoreCase('K');
+                    return result.toArray();
+                }; (async () => {
+                    const list = await resultForD();
+                    let div = document.createElement("div");
+                    list.forEach(el => {
+                        // console.log(typeof el.student_attendance_year_1, el.student_attendance_year_1);
+                        let newText = document.createTextNode(el.long_name);
+                        div.append(newText);
+                        div.append(document.createElement("br"));
+                    });
+                    d.appendChild(div);
+                })();
+
+                const resultForE = async () => {
+                    console.log("resolving E");
+
+                    const result = await db.schools.where("school_type").notEqual("Charter").count();
+                    return result;
+                }; (async () => {
+                    const count = await resultForE();
+                    // console.log(typeof count, count)
+                    let newText = document.createTextNode(count);
+                    e.appendChild(newText);
+                })();
 
             })
-        });
-
-
-        db.schools.count().then((num) => {
-            let count = num;
-            console.log(count);
-        }).then(() => {
-            // db.schools.clear();
-        }).catch(() => { "COUNTING ERROR" });
-
-
-    // db.schools.clear();
+            .catch(err => {
+                console.log("RESULT ERROR: " + err);
+            })
     </script>
+
 </head>
 
 <body>
@@ -86,81 +137,15 @@
     </div>
 
     <script>
+        const main = document.querySelector("#main");
+        const a = document.querySelector("#a");
+        const b = document.querySelector("#b");
+        const c = document.querySelector("#c");
+        const d = document.querySelector("#d");
+        const e = document.querySelector("#e");
 
-        db.open().then(function () {
-            console.log("Database ready");
-
-            const main = document.querySelector("#main");
-            const a = document.querySelector("#a");
-            const b = document.querySelector("#b");
-            const c = document.querySelector("#c");
-            const d = document.querySelector("#d");
-            const e = document.querySelector("#e");
-
-            const newDiv = document.createElement('div');
-            const p = document.createElement('p');
-
-            const asynchCount = async () => {
-                const result = await db.schools.count()
-                return result
-            }; (async () => {
-                const count = await asynchCount()
-                // console.log(typeof count, count)
-                let newText = document.createTextNode(count);
-                a.appendChild(newText);
-            })();
-
-            const resultForB = async () => {
-                const result = await db.schools.where({ student_attainment_rating: "AVERAGE" }).count();
-                return result;
-            }; (async () => {
-                const count = await resultForB();
-
-                let newText = document.createTextNode(count);
-                b.appendChild(newText);
-            })();
-
-            const resultForC = async () => {
-                const result = await db.schools.where("student_attendance_year_1").aboveOrEqual("98.0");
-                return result.toArray();
-            }; (async () => {
-                const count = await resultForC();
-                let div = document.createElement("div");
-                count.forEach(el => {
-                    // console.log(typeof el.student_attendance_year_1, el.student_attendance_year_1);
-                    let newText = document.createTextNode(el.student_attendance_year_1 + "% " + el.long_name);
-                    div.append(newText);
-                    div.append(document.createElement("br"));
-                });
-                c.appendChild(div);
-            })();
-
-            const resultForD = async () => {
-                const result = await db.schools.where("long_name").startsWithIgnoreCase('K');
-                return result.toArray();
-            }; (async () => {
-                const list = await resultForD();
-                let div = document.createElement("div");
-                list.forEach(el => {
-                    // console.log(typeof el.student_attendance_year_1, el.student_attendance_year_1);
-                    let newText = document.createTextNode(el.long_name);
-                    div.append(newText);
-                    div.append(document.createElement("br"));
-                });
-                d.appendChild(div);
-            })();
-
-            const resultForE = async () => {
-                const result = await db.schools.where("school_type").notEqual("Charter").count();
-                return result;
-            }; (async () => {
-                const count = await resultForE();
-                // console.log(typeof count, count)
-                let newText = document.createTextNode(count);
-                e.appendChild(newText);
-            })();
-        });
-
+        const newDiv = document.createElement('div');
+        const p = document.createElement('p');
     </script>
 
 </body>
